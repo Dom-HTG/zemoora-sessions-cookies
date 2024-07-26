@@ -6,7 +6,7 @@ const app = express()
 const PORT = process.env.PORT || 4000
 const sessionKey = process.env.SESSIONKEY
 
-//Middleware to set cookies.
+//Middleware config to set cookies.
 app.use(session({
     secret: sessionKey,
     resave: false,
@@ -18,6 +18,8 @@ app.get('/', (req, res) => res.status(200).json({message: "Home Page."}))
 
 //route to set new session.
 app.get('/cart', (req, res) => {
+
+    //The session middleware creates a 'session' property in the request object.
     req.session.email = "dummymail@gmail.com"
 
     res.status(200).json({message: `New session data: ${req.session.email}`});
