@@ -1,36 +1,41 @@
-const express = require("express");
-const dotenv = require("dotenv").config();
-const cookie = require("cookie-parser");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const mongoose = require("mongoose")
+const express = require('express');
+const dotenv = require('dotenv').config();
+const cookie = require('cookie-parser');
+const session = require('express-session');
+const redis = require('redis');
+const connect_redis = require('connect-redis');
+
 const app = express();
 
 const PORT = process.env.PORT || 4000
-
 const sessionKey = process.env.SESSIONKEY
 const cookieKey = process.env.COOKIEKEY
-const MONGOURL = process.env.MONGOURL
+const redisPass = process.env.REDISPASS
 
-mongoose.connect(MONGOURL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(()=>console.log("connected to mongodb")).catch((err)=>{console.error("unable to connect to mongodb cluster")})
+//create and connect redis client.
+const RedisStore = connect_redis(session);
+
+const redisClient = redis.createClient({
+    password: redisPass,
+    socket: {
+        host: 'redis-14601.c10.us-east-1-4.ec2.redns.redis-cloud.com',
+        port: 14601
+    }
+});
+
+redisClient.on('error', (err) => console.error("unable to connect to redis", err))
+redisClient.on('connect', () => console.log("redis connected successfully"))
 
 //Middleware to parse cookies with secret-key to the browser.
 app.use(cookie(cookieKey))
 
-
 //Middleware config to set cookies.
 app.use(session({
+    store: new RedisStore({client: redisClient}),
     secret: sessionKey,
     resave: false,
     saveUninitialized: true,
-    cookie:{secure: false},
-    store: new MongoStore({
-        mongoUrl: MONGOURL,
-        collectionName: 'sessions'
-    })
+    cookie:{secure: false}
 }))
 
 app.get('/', (req, res) => res.status(200).json({message: "Home Page."}))
